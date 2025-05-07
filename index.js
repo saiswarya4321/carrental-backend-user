@@ -16,7 +16,7 @@ app.use(express.urlencoded({ extended: true })) // ✅ important for form-data p
 
 const allowedOrigins = [
     'http://localhost:5173',
-    'https://car-rental-frontend-amber.vercel.app'
+    'https://carrental-frontend-user.vercel.app'
   ];
   
   app.use(cors({
