@@ -40,40 +40,98 @@ const register = async (req, res) => {
     }
 }
 
+// const login = async (req, res) => {
+//     try {
+
+//         const {email,password}=req.body;
+//         if(!email || !password){
+//            return res.status(400).json({error:"all fields are required"})
+//         }
+//         const userExist= await userDb.findOne({email})
+//         if(!userExist){
+//             return res.status(400).json({error:"User not found"})
+//         }
+//         if (!userExist.password) {
+//   return res.status(500).json({ error: "Corrupted user data: password missing" });
+// }
+//         const passwordMatch= await comparePassword(password,userExist.password)
+//         console.log(passwordMatch);
+//         if(!passwordMatch){
+//             return res.status(400).json({error:"Password not match!"})
+//         }
+//         const token=createToken(userExist._id)
+//         console.log(token,"token")
+//         res.cookie("token", token, {
+//             httpOnly: true,
+//             sameSite: "None", // Needed for cross-origin
+//             secure: true,     // Must be true when sameSite is 'None'
+//           });
+//         return res.status(200).json({message:"Login successfully!",userExist,token})
+
+
+//     } catch (error) {
+//         console.log(error);
+//         res.status(error.status || 500).json({ error: error.message || "internal server error" })
+//     }
+// }
+
 const login = async (req, res) => {
-    try {
+  try {
+    const { email, password } = req.body;
 
-        const {email,password}=req.body;
-        if(!email || !password){
-           return res.status(400).json({error:"all fields are required"})
-        }
-        const userExist= await userDb.findOne({email})
-        if(!userExist){
-            return res.status(400).json({error:"User not found"})
-        }
-        if (!userExist.password) {
-  return res.status(500).json({ error: "Corrupted user data: password missing" });
-}
-        const passwordMatch= await comparePassword(password,userExist.password)
-        console.log(passwordMatch);
-        if(!passwordMatch){
-            return res.status(400).json({error:"Password not match!"})
-        }
-        const token=createToken(userExist._id)
-        console.log(token,"token")
-        res.cookie("token", token, {
-            httpOnly: true,
-            sameSite: "None", // Needed for cross-origin
-            secure: true,     // Must be true when sameSite is 'None'
-          });
-        return res.status(200).json({message:"Login successfully!",userExist,token})
-
-
-    } catch (error) {
-        console.log(error);
-        res.status(error.status || 500).json({ error: error.message || "internal server error" })
+    // Validate input
+    if (!email || !password) {
+      return res.status(400).json({ error: "All fields are required" });
     }
-}
+
+    // Find user
+    const userExist = await userDb.findOne({ email });
+    if (!userExist) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // Check if password is missing from DB (should never happen)
+    if (!userExist.password) {
+      console.error("⚠️ Corrupted user data: missing password");
+      return res.status(500).json({ error: "Something went wrong. Please try again." });
+    }
+
+    // Compare passwords
+    const passwordMatch = await comparePassword(password, userExist.password);
+    if (!passwordMatch) {
+      return res.status(401).json({ error: "Invalid email or password" });
+    }
+
+    // Check if JWT_SECRET is defined
+    if (!process.env.JWT_SECRET) {
+      console.error("❌ JWT_SECRET is not defined in environment");
+      return res.status(500).json({ error: "Server configuration error" });
+    }
+
+    // Create JWT
+    const token = createToken(userExist._id);
+
+    // Set token in cookie
+    res.cookie("token", token, {
+      httpOnly: true,
+      sameSite: "None",
+      secure: true,
+    });
+
+    // Remove password before sending user data
+    const { password: _, ...userSafeData } = userExist._doc;
+
+    // Success
+    return res.status(200).json({
+      message: "Login successful",
+      user: userSafeData,
+      token,
+    });
+  } catch (error) {
+    console.error("🔥 Login error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
 
 
 const profile=async(req,res)=>{
