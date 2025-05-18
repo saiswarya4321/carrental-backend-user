@@ -62,16 +62,14 @@ const listbooking = async (req, res) => {
 };
 const getUserBooking = async (req, res) => {
   try {
-    const userId = req.user;  // Assuming you're using JWT for authentication and storing user in req.user
+    const userId = req.user;  
+    const bookings = await bookingDb.find({ userId: userId }).populate('carId'); 
 
-    // Fetch the booking details based on the userId
-    const bookings = await bookingDb.find({ userId: userId }).populate('carId'); // Populate car details
-
-    if (bookings.length === 0) { // Check if no bookings were found
+    if (bookings.length === 0) { 
       return res.status(404).json({ error: "No bookings found for this user" });
     }
 
-    // Send back the bookings along with the car info
+   
     return res.json(bookings);
   } catch (error) {
     console.error("Error fetching booking:", error);
