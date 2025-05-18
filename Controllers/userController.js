@@ -51,6 +51,9 @@ const login = async (req, res) => {
         if(!userExist){
             return res.status(400).json({error:"User not found"})
         }
+        if (!userExist.password) {
+  return res.status(500).json({ error: "Corrupted user data: password missing" });
+}
         const passwordMatch= await comparePassword(password,userExist.password)
         console.log(passwordMatch);
         if(!passwordMatch){
