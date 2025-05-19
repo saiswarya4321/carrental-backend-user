@@ -5,39 +5,44 @@ const {hashPassword,comparePassword} = require("../utilities/passwordUtilities")
 
 
 const register = async (req, res) => {
-    try {
-        const { name, email, password, confirmPassword, contactNumber } = req.body;
+  try {
+    console.log("Incoming request:", req.body); // ✅ log input data
 
-        if (!name || !email || !password || !confirmPassword  || !contactNumber) {
-            return res.status(400).json({ error: "all fields are required" })
-        }
-        if (password !== confirmPassword) {
-            return res.status(400).json({ error: "Passwords dosnot match" })
-        }
-        const userExist = await userDb.findOne({ email })
-        if (userExist) {
-            return res.status(400).json({ error: "Email already exist" })
-        }
+    const { name, email, password, confirmPassword, contactNumber } = req.body;
 
-        const hashedPassword = await hashPassword(password)
-
-
-
-        const newUser = new userDb({
-            name, email, password: hashedPassword, contactNumber
-        })
-        const saved = await newUser.save()
-        if (saved) {
-            const token=createToken(saved._id)
-            console.log(token,"token")
-            res.cookie("token",token)
-            return res.status(200).json({ message: "User created" })
-        }
-
-    } catch (error) {
-        console.log(error);
-        res.status(error.status || 500).json({ error: error.message || "internal server error" })
+    if (!name || !email || !password || !confirmPassword || !contactNumber) {
+      return res.status(400).json({ error: "All fields are required" });
     }
+
+    if (password !== confirmPassword) {
+      return res.status(400).json({ error: "Passwords do not match" });
+    }
+
+    const userExist = await userDb.findOne({ email });
+    if (userExist) {
+      return res.status(400).json({ error: "Email already exists" });
+    }
+
+    const hashedPassword = await hashPassword(password);
+
+    const newUser = new userDb({
+      name,
+      email,
+      password: hashedPassword,
+      contactNumber
+    });
+
+    const saved = await newUser.save();
+    if (saved) {
+      const token = createToken(saved._id);
+      console.log("Generated token:", token);
+      res.cookie("token", token);
+      return res.status(200).json({ message: "User created" });
+    }
+  } catch (error) {
+    console.error("Registration error:", error);
+    res.status(error.status || 500).json({ error: error.message || "Internal server error" });
+  }
 }
 
 // const login = async (req, res) => {
@@ -104,7 +109,7 @@ const login = async (req, res) => {
 
     // Check if JWT_SECRET is defined
     if (!process.env.JWT_SECRET) {
-      console.error("❌ JWT_SECRET is not defined in environment");
+      console.error("JWT_SECRET is not defined in environment");
       return res.status(500).json({ error: "Server configuration error" });
     }
 
@@ -128,7 +133,7 @@ const login = async (req, res) => {
       token,
     });
   } catch (error) {
-    console.error("🔥 Login error:", error);
+    console.error("Login error:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 };
